@@ -1,3 +1,4 @@
+#include <sys/wait.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -5,6 +6,42 @@
 #include <unistd.h>
 #include <errno.h>
 #include "supportFunctions.h"
+/*
+ * pwd, cd, and exit are all executed by the shell itself. No execvp needed
+ */
+void executeBuiltInCommand(char *tokens[]) {
+	if(strcmp(tokens[0], "pwd") == 0) {
+		char buff[150];
+		 if(!getcwd(buff, 150))
+			 write(STDOUT_FILENO, strerror(errno), strlen(strerror(errno)));
+		 else {//success
+			 write(STDOUT_FILENO, buff, strlen(buff));
+		 }
+
+	} else if (strcmp(tokens[0], "cd") == 0) {
+		if (chdir(tokens[1]) == -1) {
+			 write(STDOUT_FILENO, strerror(errno), strlen(strerror(errno)));
+		}
+	} else {
+		//exit
+		exit(0);
+	}
+}
+
+_Bool isBuiltInCommand(char *tokens[]) {
+	if(strcmp(tokens[0], "pwd") == 0 || strcmp(tokens[0], "cd") == 0 ||
+		strcmp(tokens[0], "exit") == 0)
+			return 1;
+	return 0;
+}
+
+void cleanupZombies() {
+	// Cleanup any previously exited background child processes
+	while (waitpid(-1, NULL, WNOHANG) > 0)
+		;
+
+	// do nothing.
+}
 
 /**
 * Read a command from the keyboard into the buffer 'buff' and tokenize it
@@ -37,7 +74,7 @@ int tokenize_command(char *buff, char *tokens[]){
 	/*Final token*/
 	tokens[tokenCount++] = tokenStart;
 
-	printf("%s \n", tokens[0]);
+	//printf("%s \n", tokens[0]);
 //	printf("%s \n", tokens[1]);
 
 	return tokenCount;
