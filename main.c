@@ -18,6 +18,9 @@
 */
 int main(int argc, char* argv[])
 {
+	struct historyStruct history;
+	history.currentSize = 0;
+	history.totalCommandsExecuted = 0;
 	char input_buffer[COMMAND_LENGTH];
 	char *tokens[NUM_TOKENS];
 
@@ -25,13 +28,15 @@ int main(int argc, char* argv[])
 		// Get command
 		// Use write because we need to use read()/write() to work with
 		// signals which are incompatible with printf().
-		write(STDOUT_FILENO, "\n> ", strlen("> "));
+		executePWDCommand();
+		write(STDOUT_FILENO, "> ", strlen("> "));
+
 		_Bool in_background = false;
 		read_command(input_buffer, tokens, &in_background);
 
 		if (isBuiltInCommand(tokens)) {
 			executeBuiltInCommand(tokens);
-		} else { //command is executed using execvp()
+		} else { //external command
 			pid_t pID = fork();
 
 			if (pID == 0) {
@@ -53,6 +58,7 @@ int main(int argc, char* argv[])
 
 			// Cleanup any previously exited background child processes
 			cleanupZombies();
+			write(STDOUT_FILENO, "\n", strlen("\n"));
 		}
 	}
 
