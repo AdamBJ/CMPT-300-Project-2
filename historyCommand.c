@@ -1,11 +1,12 @@
+#include <sys/wait.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
-#include "historyCommand.h"
 #include "supportFunctions.h"
+#include "historyCommand.h"
 
 void executeHistoryCommand() {
 	printHistory();

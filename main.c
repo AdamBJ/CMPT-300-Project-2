@@ -16,9 +16,10 @@
 * child to finish. Otherwise, parent loops back to
 * read_command() again immediately.
 */
+struct historyStruct history;
+
 int main(int argc, char* argv[])
 {
-	struct historyStruct history;
 	history.currentSize = 0;
 	history.totalCommandsExecuted = 0;
 	char input_buffer[COMMAND_LENGTH];
