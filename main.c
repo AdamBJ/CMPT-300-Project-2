@@ -59,7 +59,13 @@ int main(int argc, char* argv[])
 
 			// Cleanup any previously exited background child processes
 			cleanupZombies();
-			write(STDOUT_FILENO, "\n", strlen("\n"));
+		}
+		/*reset*/
+		write(STDOUT_FILENO, "\n", strlen("\n"));
+		for (int i = 0; i < NUM_TOKENS; i++) {
+			if (tokens[i] == NULL)
+				break;
+			*tokens[i] = 0;
 		}
 	}
 

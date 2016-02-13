@@ -12,7 +12,7 @@
 _Bool isBuiltInCommand(char *tokens[]) {
 	if(strcmp(tokens[0], "pwd") == 0 || strcmp(tokens[0], "cd") == 0 ||
 		strcmp(tokens[0], "exit") == 0 || strcmp(tokens[0], "history") == 0
-		|| strcmp(tokens[0], "!!" == 0) || *(tokens[0]) == '!')
+		|| strcmp(tokens[0], "!!") == 0 || tokens[0][0] == '!')
 			return 1;
 	return 0;
 }
@@ -25,7 +25,7 @@ void executeBuiltInCommand(char *tokens[]) {
 			 write(STDOUT_FILENO, strerror(errno), strlen(strerror(errno)));
 		}
 	} else if (strcmp(tokens[0], "history") == 0){
-		//executeHistoryCommand();
+		executeHistoryCommand();
 	} else {
 		//exit
 		exit(0);
@@ -78,13 +78,16 @@ void read_command(char *buff, char *tokens[], _Bool *in_background)
 			buff[strlen(buff) - 1] = '\0';
 		}
 
-		// Tokenize (saving original command string)
+		char buffCopy[COMMAND_LENGTH];
+		strcpy(buffCopy, buff);
+
+		// Tokenize (buff has spaces replaced with nulls)
 		int token_count = tokenize_command(buff, tokens);
 		if (token_count == 0) {
 			return;
 		}
 
-		addCommandToHistory(buff);
+		addCommandToHistory(buffCopy);
 
 		// Extract if running in background:
 		if (token_count > 0 && strcmp(tokens[token_count - 1], "&") == 0) {
@@ -95,14 +98,18 @@ void read_command(char *buff, char *tokens[], _Bool *in_background)
 		history.totalCommandsExecuted++;
 }
 int tokenize_command(char *buff, char *tokens[]){
+	//store address of start of buff so we can restore after tokenizing
+	char buffCopy[COMMAND_LENGTH];
+	strcpy(buffCopy, buff);
+
 	int tokenCount = 0;
 	char *tokenStart = buff;
 
-	while (*buff != 0){
-		if (*buff == 32){//" "
+	while (*buff != '\0'){
+		if (*buff == ' '){//tokenStart points to start of newly found token
 			tokens[tokenCount++] = tokenStart;
 			tokenStart = buff + 1;
-			*buff = 0;
+			*buff = '\0';
 		}
 		buff++;
 	}
@@ -110,9 +117,7 @@ int tokenize_command(char *buff, char *tokens[]){
 	/*Final token*/
 	tokens[tokenCount++] = tokenStart;
 
-	//printf("%s \n", tokens[0]);
-//	printf("%s \n", tokens[1]);
-
+	buff = buffCopy;
 	return tokenCount;
 }
 
