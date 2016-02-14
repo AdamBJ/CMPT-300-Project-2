@@ -1,8 +1,8 @@
 #ifndef HISTORYCOMMAND_H
 #define HISTORYCOMMAND_H
 
-void executeHistoryCommand();
+void executePrintHistoryCommand();
 void addCommandToHistory(char *command);
-void printHistory();
+void executeSpecificHistoryCommand(int commandNo);
 
 #endif

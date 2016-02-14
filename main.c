@@ -18,6 +18,8 @@
 */
 struct historyStruct history;
 
+
+
 int main(int argc, char* argv[])
 {
 	history.currentSize = 0;
@@ -34,39 +36,9 @@ int main(int argc, char* argv[])
 
 		_Bool in_background = false;
 		read_command(input_buffer, tokens, &in_background);
+		executeCommand(in_background, tokens);
 
-		if (isBuiltInCommand(tokens)) {
-			executeBuiltInCommand(tokens);
-		} else { //external command
-			pid_t pID = fork();
-
-			if (pID == 0) {
-				//child
-				if (execvp(tokens[0], tokens) == -1) {
-					write(STDOUT_FILENO, strerror(errno), strlen(strerror(errno)));
-				}
-
-				exit(0);
-			} else if (pID < 0) {
-				perror("Failed to fork");
-			}
-
-			//parent
-			if (!in_background) {
-				if (waitpid(pID, NULL, 0) == -1)
-					perror("Error waiting for child to exit");
-			}
-
-			// Cleanup any previously exited background child processes
-			cleanupZombies();
-		}
-		/*reset*/
-		write(STDOUT_FILENO, "\n", strlen("\n"));
-		for (int i = 0; i < NUM_TOKENS; i++) {
-			if (tokens[i] == NULL)
-				break;
-			*tokens[i] = 0;
-		}
+		resetBuffers(tokens);
 	}
 
 return 0;

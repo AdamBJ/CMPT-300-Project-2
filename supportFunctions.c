@@ -8,11 +8,37 @@
 #include "supportFunctions.h"
 #include "historyCommand.h"
 
+void executeCommand(_Bool in_background, char* tokens[NUM_TOKENS]) {
+	if (isBuiltInCommand(tokens)) {
+		executeBuiltInCommand(tokens);
+	} else {
+		//external command
+		pid_t pID = fork();
+		if (pID == 0) {
+			//child
+			if (execvp(tokens[0], tokens) == -1) {
+				write(STDOUT_FILENO, strerror(errno), strlen(strerror(errno)));
+			}
+			exit(0);
+		} else if (pID < 0) {
+			perror("Failed to fork");
+			write(STDOUT_FILENO, "Failed to fork", strlen("Failed to fork"));
+		}
+
+		//parent
+		if (!in_background) {
+			if (waitpid(pID, NULL, 0) == -1)
+				perror("Error waiting for child to exit");
+		}
+		// Cleanup any previously exited background child processes
+		cleanupZombies();
+	}
+}
 
 _Bool isBuiltInCommand(char *tokens[]) {
 	if(strcmp(tokens[0], "pwd") == 0 || strcmp(tokens[0], "cd") == 0 ||
 		strcmp(tokens[0], "exit") == 0 || strcmp(tokens[0], "history") == 0
-		|| strcmp(tokens[0], "!!") == 0 || tokens[0][0] == '!')
+		|| tokens[0][0] == '!')
 			return 1;
 	return 0;
 }
@@ -25,8 +51,13 @@ void executeBuiltInCommand(char *tokens[]) {
 			 write(STDOUT_FILENO, strerror(errno), strlen(strerror(errno)));
 		}
 	} else if (strcmp(tokens[0], "history") == 0){
-		executeHistoryCommand();
-	} else {
+		executePrintHistoryCommand();
+	} else if (strcmp(tokens[0], "!!") == 0) {
+
+	} else if (tokens[0][0] == '!') {
+
+	}
+	else {
 		//exit
 		exit(0);
 	}
@@ -119,6 +150,17 @@ int tokenize_command(char *buff, char *tokens[]){
 
 	buff = buffCopy;
 	return tokenCount;
+}
+
+void resetBuffers(char* tokens[NUM_TOKENS]) {
+	/*reset*/
+	write(STDOUT_FILENO, "\n", strlen("\n"));
+	for (int i = 0; i < NUM_TOKENS; i++) {
+		if (tokens[i] == NULL)
+			break;
+
+		*tokens[i] = 0;
+	}
 }
 
 void cleanupZombies() {
