@@ -18,6 +18,6 @@ _Bool isBuiltInCommand(char *tokens[]);
 void cleanupZombies();
 void resetBuffers(char* tokens[NUM_TOKENS]);
 int tokenize_command(char *buff, char *tokens[]);
-void read_command(char *buff, char *tokens[], _Bool *in_background);
+int read_command(char *buff, char *tokens[], _Bool *in_background);
 
 #endif

@@ -16,9 +16,8 @@
 * child to finish. Otherwise, parent loops back to
 * read_command() again immediately.
 */
+
 struct historyStruct history;
-
-
 
 int main(int argc, char* argv[])
 {
@@ -29,14 +28,15 @@ int main(int argc, char* argv[])
 
 	while (true) {
 		// Get command
+
+		executePWDCommand();
 		// Use write because we need to use read()/write() to work with
 		// signals which are incompatible with printf().
-		executePWDCommand();
 		write(STDOUT_FILENO, "> ", strlen("> "));
 
 		_Bool in_background = false;
-		read_command(input_buffer, tokens, &in_background);
-		executeCommand(in_background, tokens);
+		if (read_command(input_buffer, tokens, &in_background))
+			executeCommand(in_background, tokens);
 
 		resetBuffers(tokens);
 	}

@@ -35,35 +35,38 @@ void addCommandToHistory(char *command) {
 	}
 }
 
-void executeSpecificHistoryCommand(int commandNo) {
+void executeNumberedHistoryCommand(int commandNo) {
+	// errorchecking
+	if (commandNo < 1 || commandNo > history.totalCommandsExecuted) {
+				write(STDOUT_FILENO, "Invalid command number",
+						strlen("Invalid command number"));
+				return;
+	}
+
 	if (history.currentSize < HISTORY_DEPTH) {
-		if (commandNo < 1 ) {
-			write(STDOUT_FILENO, "Invalid command number",
-					strlen("Invalid command number"));
-			return;
-		} else {
-			// success
-			readAndExecuteCommandAtHistoryArrayIndex(commandNo-1);
-		}
+			execHistCommandAtIndex(commandNo-1);
 	} else {
-		//history full
-		if (history.totalCommandsExecuted - 10 > history.totalCommandsExecuted
-				- commandNo) {
+		//history full, check if specifed command is within valid history range
+		if (history.totalCommandsExecuted - HISTORY_DEPTH
+				> history.totalCommandsExecuted - commandNo) {
 			write(STDOUT_FILENO, "Invalid command number",
 							strlen("Invalid command number"));
 			return;
 		} else {
-			readAndExecuteCommandAtHistoryArrayIndex();//todo what index?
+			// convert command number to index within history array
+			int histArrayIndex = HISTORY_DEPTH -
+					(history.totalCommandsExecuted - commandNo + 1);
+			execHistCommandAtIndex(histArrayIndex);
 		}
 	}
 }
-void readAndExecuteCommandAtHistoryArrayIndex(int commandNo) {
+void execHistCommandAtIndex(int commandNoIndex) {
 	// success
 	char commandBuff[COMMAND_LENGTH];
-	strcpy(commandBuff, history.historyArray[commandNo + 1]);
-	char tokens[NUM_TOKENS];
+	strcpy(commandBuff, history.historyArray[commandNoIndex]);
+	char *tokens[NUM_TOKENS];
 	_Bool in_background = false;
-	read_command(commandBuff, tokens, &in_background);
+	tokenizeAndProcessCommand(commandBuff, tokens, &in_background);
 	executeCommand(in_background, tokens);
 }
 

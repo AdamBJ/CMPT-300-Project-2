@@ -8,11 +8,12 @@
 #include "supportFunctions.h"
 #include "historyCommand.h"
 
-void executeCommand(_Bool in_background, char* tokens[NUM_TOKENS]) {
+void executeCommand(_Bool in_background, char *tokens[]) {
 	if (isBuiltInCommand(tokens)) {
 		executeBuiltInCommand(tokens);
 	} else {
-		//external command
+		//external command, execute as seperate process
+
 		pid_t pID = fork();
 		if (pID == 0) {
 			//child
@@ -47,15 +48,21 @@ void executeBuiltInCommand(char *tokens[]) {
 	if(strcmp(tokens[0], "pwd") == 0) {
 		executePWDCommand();
 	} else if (strcmp(tokens[0], "cd") == 0) {
-		if (chdir(tokens[1]) == -1) {
+		if (chdir(tokens[1]) == -1)
 			 write(STDOUT_FILENO, strerror(errno), strlen(strerror(errno)));
-		}
 	} else if (strcmp(tokens[0], "history") == 0){
 		executePrintHistoryCommand();
 	} else if (strcmp(tokens[0], "!!") == 0) {
-
+		executeNumberedHistoryCommand(history.totalCommandsExecuted);
 	} else if (tokens[0][0] == '!') {
-
+		// validate input
+		int commandNo = strtol(&tokens[0][1], NULL, 10);
+		if(commandNo == 0) { // 0 is returned if input is invalid (not an int)
+			write(STDOUT_FILENO, "Invalid history command number"
+								, strlen("Invalid history command number"));
+		} else {
+			executeNumberedHistoryCommand(commandNo);
+		}
 	}
 	else {
 		//exit
@@ -91,43 +98,51 @@ least NUM_TOKENS long. Will strip out up to one final '&' token.
 *
 an & as their last token; otherwise set to false.
 */
-void read_command(char *buff, char *tokens[], _Bool *in_background)
+int read_command(char *buff, char *tokens[], _Bool *in_background) {
+	*in_background = false;
+
+	// Read input
+	int length = read(STDIN_FILENO, buff, COMMAND_LENGTH-1);
+	if ( (length < 0) && (errno != EINTR) ) //EINTR == interrupted system call
 	{
-		*in_background = false;
+		perror("Unable to read command. Terminating.\n");
+		exit(-1); /* terminate with error */
+	}
 
-		// Read input
-		int length = read(STDIN_FILENO, buff, COMMAND_LENGTH-1);
-		if ( (length < 0) && (errno != EINTR) ) //EINTR == interrupted system call
-		{
-			perror("Unable to read command. Terminating.\n");
-			exit(-1); /* terminate with error */
-		}
+	// Null terminate and strip \n.
+	buff[length] = '\0';
+	if (buff[strlen(buff) - 1] == '\n') {
+		buff[strlen(buff) - 1] = '\0';
+	}
 
-		// Null terminate and strip \n.
-		buff[length] = '\0';
-		if (buff[strlen(buff) - 1] == '\n') {
-			buff[strlen(buff) - 1] = '\0';
-		}
-
-		char buffCopy[COMMAND_LENGTH];
-		strcpy(buffCopy, buff);
-
-		// Tokenize (buff has spaces replaced with nulls)
-		int token_count = tokenize_command(buff, tokens);
-		if (token_count == 0) {
-			return;
-		}
-
-		addCommandToHistory(buffCopy);
-
-		// Extract if running in background:
-		if (token_count > 0 && strcmp(tokens[token_count - 1], "&") == 0) {
-			*in_background = true;
-			tokens[token_count - 1] = 0;
-		}
-
-		history.totalCommandsExecuted++;
+	int tokenizeSuccess = tokenizeAndProcessCommand(buff, tokens, in_background);
+	return tokenizeSuccess;
 }
+int tokenizeAndProcessCommand(char* buff, char* tokens[], _Bool* in_background) {
+	char buffCopy[COMMAND_LENGTH];
+	strcpy(buffCopy, buff);
+
+	// Tokenize (buff has spaces replaced with nulls)
+	int token_count = tokenize_command(buff, tokens);
+	if (token_count == 0) {
+		//error
+		return token_count;
+	}
+	// Extract if running in background:
+	if (token_count > 0 && strcmp(tokens[token_count - 1], "&") == 0) {
+		*in_background = true;
+		tokens[token_count - 1] = 0;
+	}
+	// Don't add commands !n or !! to history
+	if (buffCopy[0] != '!') {
+		addCommandToHistory(buffCopy);
+		history.totalCommandsExecuted++;
+	}
+
+	// tokenizing and processing successful
+	return 1;
+}
+
 int tokenize_command(char *buff, char *tokens[]){
 	//store address of start of buff so we can restore after tokenizing
 	char buffCopy[COMMAND_LENGTH];
