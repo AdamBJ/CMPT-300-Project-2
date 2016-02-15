@@ -17,7 +17,7 @@ void executePWDCommand();
 void executeBuiltInCommand(char *tokens[]);
 _Bool isBuiltInCommand(char *tokens[]);
 void cleanupZombies();
-void resetBuffers(char* tokens[]);
+void zeroArray(char* tokens[]);
 int tokenize_command(char *buff, char *tokens[]);
 int tokenizeAndProcessCommand(char* buff, char* tokens[], _Bool* in_background);
 int read_command(char *buff, char *tokens[], _Bool *in_background);

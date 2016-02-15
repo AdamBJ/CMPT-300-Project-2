@@ -11,29 +11,14 @@
 void executePrintHistoryCommand() {
 	char intAsStr[50];
 
-		for (int i = 0; i < history.currentSize; i++) {
-			sprintf(intAsStr, "%d",
-					history.totalCommandsExecuted - history.currentSize + i + 1);// + 1 to start count from 1 instead of 0
-			strcat(intAsStr, "\t");
-			write(STDOUT_FILENO, intAsStr, strlen(intAsStr));
-			write(STDOUT_FILENO, history.historyArray[i],
-					strlen(history.historyArray[i]));
-			write(STDOUT_FILENO, "\n", strlen("\n"));
-		}
-}
-
-void restoreHistory(char *droppedCommand) {
-	// remove invalid command
-	for (int i = 0; i < history.currentSize - 1; i++) {
-		strcpy(history.historyArray[i], history.historyArray[i + 1]);
-	}
-	history.totalCommandsExecuted--;
-	history.currentSize--;
-
-	// restore last dropped command
-	if (droppedCommand != NULL) {
-		strcpy(history.historyArray[0], droppedCommand);
-		history.currentSize++;
+	for (int i = 0; i < history.currentSize; i++) {
+		sprintf(intAsStr, "%d",
+				history.totalCommandsExecuted - history.currentSize + i + 1);// + 1 to start count from 1 instead of 0
+		strcat(intAsStr, "\t");
+		write(STDOUT_FILENO, intAsStr, strlen(intAsStr));
+		write(STDOUT_FILENO, history.historyArray[i],
+				strlen(history.historyArray[i]));
+		write(STDOUT_FILENO, "\n", strlen("\n"));
 	}
 }
 
@@ -52,24 +37,24 @@ void addCommandToHistory(char *command) {
 }
 
 void executeNumberedHistoryCommand(int commandNo) {
-	// errorchecking
+	// Check input for semantic errors
 	if (commandNo < 1 || commandNo > history.totalCommandsExecuted) {
-				write(STDOUT_FILENO, "Invalid command number",
-						strlen("Invalid command number"));
-				return;
+		write(STDOUT_FILENO, "Invalid command number",
+				strlen("Invalid command number"));
+		return;
 	}
 
 	if (history.currentSize < HISTORY_DEPTH) {
 			execHistCommandAtIndex(commandNo-1);
 	} else {
-		//history full, check if specifed command is within valid history range
+		//history full, check if specified command is within valid history range
 		if (history.totalCommandsExecuted - HISTORY_DEPTH
 				> history.totalCommandsExecuted - commandNo) {
 			write(STDOUT_FILENO, "Invalid command number",
 							strlen("Invalid command number"));
 			return;
 		} else {
-			// convert command number to index within history array
+			// Valid command. convert to index within history array
 			int histArrayIndex = HISTORY_DEPTH -
 					(history.totalCommandsExecuted - commandNo + 1);
 			execHistCommandAtIndex(histArrayIndex);
