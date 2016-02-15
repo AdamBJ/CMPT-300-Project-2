@@ -11,13 +11,15 @@ struct historyStruct {
 };
 extern struct historyStruct history;
 
-void executeCommand(_Bool in_background, char* tokens[NUM_TOKENS]);
+void handle_SIGINT();
+void executeCommand(_Bool in_background, char* tokens[]);
 void executePWDCommand();
 void executeBuiltInCommand(char *tokens[]);
 _Bool isBuiltInCommand(char *tokens[]);
 void cleanupZombies();
-void resetBuffers(char* tokens[NUM_TOKENS]);
+void resetBuffers(char* tokens[]);
 int tokenize_command(char *buff, char *tokens[]);
+int tokenizeAndProcessCommand(char* buff, char* tokens[], _Bool* in_background);
 int read_command(char *buff, char *tokens[], _Bool *in_background);
 
 #endif

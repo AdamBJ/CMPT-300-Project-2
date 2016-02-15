@@ -3,35 +3,32 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include <unistd.h>
 #include <errno.h>
 #include "supportFunctions.h"
-
-
-/**
-* Steps For Basic Shell:
-* 1. Fork a child process
-* 2. Child process invokes execvp() using results in token array.
-* 3. If in_background is false, parent waits for
-* child to finish. Otherwise, parent loops back to
-* read_command() again immediately.
-*/
 
 struct historyStruct history;
 
 int main(int argc, char* argv[])
 {
+	/* set up the signal handler */
+	struct sigaction handler;
+	handler.sa_handler = handle_SIGINT;
+	handler.sa_flags = 0;
+	sigemptyset(&handler.sa_mask);
+	sigaction(SIGINT, &handler, NULL);
+
+	/* Initialize variables*/
 	history.currentSize = 0;
 	history.totalCommandsExecuted = 0;
 	char input_buffer[COMMAND_LENGTH];
 	char *tokens[NUM_TOKENS];
 
+	/*Read/execute command loop*/
 	while (true) {
-		// Get command
-
 		executePWDCommand();
-		// Use write because we need to use read()/write() to work with
-		// signals which are incompatible with printf().
+		//write used instead of printf for compatibility with signals
 		write(STDOUT_FILENO, "> ", strlen("> "));
 
 		_Bool in_background = false;
@@ -39,6 +36,7 @@ int main(int argc, char* argv[])
 			executeCommand(in_background, tokens);
 
 		resetBuffers(tokens);
+		write(STDOUT_FILENO, "\n", strlen("\n"));
 	}
 
 return 0;

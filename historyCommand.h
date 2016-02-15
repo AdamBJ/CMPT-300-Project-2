@@ -3,6 +3,8 @@
 
 void executePrintHistoryCommand();
 void addCommandToHistory(char *command);
+void restoreHistory(char *droppedCommand);
 void executeNumberedHistoryCommand(int commandNo);
+void execHistCommandAtIndex(int commandNoIndex);
 
 #endif

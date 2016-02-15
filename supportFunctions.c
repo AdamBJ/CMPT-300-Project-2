@@ -8,19 +8,73 @@
 #include "supportFunctions.h"
 #include "historyCommand.h"
 
+/* Signal handler function */
+void handle_SIGINT()
+{
+	write(STDOUT_FILENO, "\n", strlen("\n"));
+	executePrintHistoryCommand();
+}
+
+int read_command(char *buff, char *tokens[], _Bool *in_background) {
+	*in_background = false;
+
+	// Read input
+	int length = read(STDIN_FILENO, buff, COMMAND_LENGTH-1);
+
+	if ( (length < 0) && (errno !=EINTR) ){
+		perror( "Unable to read command 2. Terminating.\n ");
+		exit(-1);
+	}
+	if ( (length < 0) && (errno == EINTR) ) {
+		// read interrupted by signal. Report failure of read_command to main().
+		return 0;
+	}
+
+	// Null terminate and strip \n.
+	buff[length] = '\0';
+	if (buff[strlen(buff) - 1] == '\n') {
+		buff[strlen(buff) - 1] = '\0';
+	}
+
+	int tokenizeSuccess = tokenizeAndProcessCommand(buff, tokens, in_background);
+	return tokenizeSuccess;
+}
 void executeCommand(_Bool in_background, char *tokens[]) {
+	// add command to history
+	char command[COMMAND_LENGTH];
+	*command = 0; //contents of command[...]; are undetermined. Make sure it's clear before concat op
+	for (int i = 0; i < NUM_TOKENS; i++) {
+		strcat(command, tokens[i]);
+		if (tokens[i+1] == NULL)
+			break;
+		else
+			strcat(command, " ");
+	}
+
+//	char droppedCommand[COMMAND_LENGTH];
+//	if (history.totalCommandsExecuted == 0)
+//		droppedCommand = '\0';
+//	else
+//		strcpy(droppedCommand, history.historyArray[0]);
+
+	// Don't add commands !n or !! to history
+	if (command[0] != '!') {
+		addCommandToHistory(command);
+	}
+
+	// Execute the command
 	if (isBuiltInCommand(tokens)) {
 		executeBuiltInCommand(tokens);
 	} else {
 		//external command, execute as seperate process
-
 		pid_t pID = fork();
-		if (pID == 0) {
-			//child
+		if (pID == 0) { //child
+			/*!! execvp() ONLY returns is an error has occurred. Otherwise this thread is chest-popped
+			 * by the call to execvp (it is killed)!!*/
 			if (execvp(tokens[0], tokens) == -1) {
 				write(STDOUT_FILENO, strerror(errno), strlen(strerror(errno)));
+				exit(0);
 			}
-			exit(0);
 		} else if (pID < 0) {
 			perror("Failed to fork");
 			write(STDOUT_FILENO, "Failed to fork", strlen("Failed to fork"));
@@ -98,30 +152,7 @@ least NUM_TOKENS long. Will strip out up to one final '&' token.
 *
 an & as their last token; otherwise set to false.
 */
-int read_command(char *buff, char *tokens[], _Bool *in_background) {
-	*in_background = false;
-
-	// Read input
-	int length = read(STDIN_FILENO, buff, COMMAND_LENGTH-1);
-	if ( (length < 0) && (errno != EINTR) ) //EINTR == interrupted system call
-	{
-		perror("Unable to read command. Terminating.\n");
-		exit(-1); /* terminate with error */
-	}
-
-	// Null terminate and strip \n.
-	buff[length] = '\0';
-	if (buff[strlen(buff) - 1] == '\n') {
-		buff[strlen(buff) - 1] = '\0';
-	}
-
-	int tokenizeSuccess = tokenizeAndProcessCommand(buff, tokens, in_background);
-	return tokenizeSuccess;
-}
 int tokenizeAndProcessCommand(char* buff, char* tokens[], _Bool* in_background) {
-	char buffCopy[COMMAND_LENGTH];
-	strcpy(buffCopy, buff);
-
 	// Tokenize (buff has spaces replaced with nulls)
 	int token_count = tokenize_command(buff, tokens);
 	if (token_count == 0) {
@@ -133,26 +164,19 @@ int tokenizeAndProcessCommand(char* buff, char* tokens[], _Bool* in_background) 
 		*in_background = true;
 		tokens[token_count - 1] = 0;
 	}
-	// Don't add commands !n or !! to history
-	if (buffCopy[0] != '!') {
-		addCommandToHistory(buffCopy);
-		history.totalCommandsExecuted++;
-	}
 
 	// tokenizing and processing successful
 	return 1;
 }
 
 int tokenize_command(char *buff, char *tokens[]){
-	//store address of start of buff so we can restore after tokenizing
-	char buffCopy[COMMAND_LENGTH];
-	strcpy(buffCopy, buff);
-
 	int tokenCount = 0;
 	char *tokenStart = buff;
 
 	while (*buff != '\0'){
 		if (*buff == ' '){//tokenStart points to start of newly found token
+			if (tokenCount == NUM_TOKENS - 1) // no room for null terminator
+				return 0; //error
 			tokens[tokenCount++] = tokenStart;
 			tokenStart = buff + 1;
 			*buff = '\0';
@@ -160,21 +184,18 @@ int tokenize_command(char *buff, char *tokens[]){
 		buff++;
 	}
 
-	/*Final token*/
+	/*Final token and null terminate*/
 	tokens[tokenCount++] = tokenStart;
+	tokens[tokenCount + 1] = '\0';
 
-	buff = buffCopy;
 	return tokenCount;
 }
 
-void resetBuffers(char* tokens[NUM_TOKENS]) {
-	/*reset*/
-	write(STDOUT_FILENO, "\n", strlen("\n"));
+void resetBuffers(char* tokens[]) {
 	for (int i = 0; i < NUM_TOKENS; i++) {
 		if (tokens[i] == NULL)
 			break;
-
-		*tokens[i] = 0;
+		tokens[i] = '\0';
 	}
 }
 
@@ -182,7 +203,6 @@ void cleanupZombies() {
 	// Cleanup any previously exited background child processes
 	while (waitpid(-1, NULL, WNOHANG) > 0)
 		;
-
 	// do nothing.
 }
 

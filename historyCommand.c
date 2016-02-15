@@ -22,6 +22,21 @@ void executePrintHistoryCommand() {
 		}
 }
 
+void restoreHistory(char *droppedCommand) {
+	// remove invalid command
+	for (int i = 0; i < history.currentSize - 1; i++) {
+		strcpy(history.historyArray[i], history.historyArray[i + 1]);
+	}
+	history.totalCommandsExecuted--;
+	history.currentSize--;
+
+	// restore last dropped command
+	if (droppedCommand != NULL) {
+		strcpy(history.historyArray[0], droppedCommand);
+		history.currentSize++;
+	}
+}
+
 void addCommandToHistory(char *command) {
 	if (history.currentSize == HISTORY_DEPTH) {
 		for (int i = 1; i < HISTORY_DEPTH; i++) {
@@ -33,6 +48,7 @@ void addCommandToHistory(char *command) {
 		strcpy(history.historyArray[history.currentSize], command);
 		history.currentSize++;
 	}
+	history.totalCommandsExecuted++;
 }
 
 void executeNumberedHistoryCommand(int commandNo) {
@@ -66,6 +82,11 @@ void execHistCommandAtIndex(int commandNoIndex) {
 	strcpy(commandBuff, history.historyArray[commandNoIndex]);
 	char *tokens[NUM_TOKENS];
 	_Bool in_background = false;
+
+	// display history command to be executed as per assignmnet instructions
+	write(STDOUT_FILENO, commandBuff, strlen(commandBuff));
+	write(STDOUT_FILENO, "\n", strlen("\n"));
+
 	tokenizeAndProcessCommand(commandBuff, tokens, &in_background);
 	executeCommand(in_background, tokens);
 }
