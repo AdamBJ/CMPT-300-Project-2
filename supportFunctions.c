@@ -65,6 +65,9 @@ void executeCommand(_Bool in_background, char *tokens[]) {
 		if (!in_background) {
 			if (waitpid(pID, NULL, 0) == -1)
 				perror("Error waiting for child to exit");
+		} else {
+			//give time for child to finish executing before starting loop
+			usleep(10000);
 		}
 
 		// Cleanup any previously exited background child processes
