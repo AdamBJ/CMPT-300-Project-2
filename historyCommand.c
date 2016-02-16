@@ -48,8 +48,7 @@ void executeNumberedHistoryCommand(int commandNo) {
 			execHistCommandAtIndex(commandNo-1);
 	} else {
 		//history full, check if specified command is within valid history range
-		if (history.totalCommandsExecuted - HISTORY_DEPTH
-				> history.totalCommandsExecuted - commandNo) {
+		if (history.totalCommandsExecuted - commandNo >= HISTORY_DEPTH) {
 			write(STDOUT_FILENO, "Invalid command number",
 							strlen("Invalid command number"));
 			return;
