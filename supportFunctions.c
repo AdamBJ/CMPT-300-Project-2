@@ -75,7 +75,7 @@ void executeCommand(_Bool in_background, char *tokens[]) {
 _Bool isBuiltInCommand(char *tokens[]) {
 	if(strcmp(tokens[0], "pwd") == 0 || strcmp(tokens[0], "cd") == 0 ||
 		strcmp(tokens[0], "exit") == 0 || strcmp(tokens[0], "history") == 0
-		|| tokens[0][0] == '!')
+		|| strcmp(tokens[0], "\0") == 0 || tokens[0][0] == '!')
 			return 1;
 	return 0;
 }
@@ -93,15 +93,17 @@ void executeBuiltInCommand(char *tokens[]) {
 		executeNumberedHistoryCommand(history.totalCommandsExecuted);
 	} else if (tokens[0][0] == '!') {
 		// validate input (check syntax)
-		int commandNo = strtol(&tokens[0][1], NULL, 10);
-		if(commandNo == 0) { // 0 is returned if input is invalid (not an int)
+		float commandNo = strtof(&tokens[0][1], NULL);
+		if(commandNo == 0 || commandNo != (int)commandNo) {
 			write(STDOUT_FILENO, "Invalid history command number\n"
 								, strlen("Invalid history command number\n"));
 		} else {
 			executeNumberedHistoryCommand(commandNo);
 		}
-	}
-	else {
+	} else if (strcmp(tokens[0], "\0") == 0) {
+		//carriage return
+		return;
+	} else {
 		//exit
 		exit(0);
 	}
@@ -120,8 +122,8 @@ void executePWDCommand() {
 /*Returns 1 if successful, 0 otherwise*/
 
 int tokenizeAndProcessCommand(char* buff, char* tokens[], _Bool* in_background) {
-	// Add command in buff to history if not !n or !!
-	if (buff[0] != '!') {
+	// Add command in buff to history if not !n, !!, or carriage return (newline)
+	if (buff[0] != '!' && buff[0] != '\0') {
 		addCommandToHistory(buff);
 	}
 
