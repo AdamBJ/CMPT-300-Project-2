@@ -39,8 +39,8 @@ void addCommandToHistory(char *command) {
 void executeNumberedHistoryCommand(int commandNo) {
 	// Check input for semantic errors
 	if (commandNo < 1 || commandNo > history.totalCommandsExecuted) {
-		write(STDOUT_FILENO, "Invalid command number",
-				strlen("Invalid command number"));
+		write(STDOUT_FILENO, "Invalid command number\n",
+				strlen("Invalid command number\n"));
 		return;
 	}
 
@@ -49,8 +49,8 @@ void executeNumberedHistoryCommand(int commandNo) {
 	} else {
 		//history full, check if specified command is within valid history range
 		if (history.totalCommandsExecuted - commandNo >= HISTORY_DEPTH) {
-			write(STDOUT_FILENO, "Invalid command number",
-							strlen("Invalid command number"));
+			write(STDOUT_FILENO, "Invalid command number\n",
+							strlen("Invalid command number\n"));
 			return;
 		} else {
 			// Valid command. convert to index within history array

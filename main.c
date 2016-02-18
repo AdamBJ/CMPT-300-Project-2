@@ -11,17 +11,15 @@
 /**
 * Read a command from the keyboard into the buffer 'buff' and tokenize it
 * such that 'tokens[i]' points into 'buff' to the i'th token in the command.
-* buff: Buffer allocated by the calling code. Must be at least
+* buff: Buffer allocated by the calling code. Must be at least COMMAND_LENGTH
+* bytes long.
 *
-COMMAND_LENGTH bytes long.
 * tokens[]: Array of character pointers which point into 'buff'. Must be at
+* least NUM_TOKENS long. Will strip out up to one final '&' token.
+* 'tokens' will be NULL terminated.
 *
-least NUM_TOKENS long. Will strip out up to one final '&' token.
-*
-'tokens' will be NULL terminated.
 * in_background: pointer to a boolean variable. Set to true if user entered
-*
-an & as their last token; otherwise set to false.
+* an & as their last token; otherwise set to false.
 */
 
 struct historyStruct history;
@@ -39,10 +37,10 @@ int main(int argc, char* argv[])
 	history.currentSize = 0;
 	history.totalCommandsExecuted = 0;
 	char input_buffer[COMMAND_LENGTH];
-	char *tokens[NUM_TOKENS];
+	char *tokens[NUM_TOKENS] = { 0 }; //initialize array to 0 to prevent valgrind error
 	_Bool in_background = false;
 
-	/* Read -> execute loop*/
+	/* Start the read command -> execute command loop*/
 	while (true) {
 		executePWDCommand();
 		//write used instead of printf for compatibility with signals
@@ -55,5 +53,5 @@ int main(int argc, char* argv[])
 		zeroArray(tokens);
 	}
 
-return 0;
+	return 0;
 }

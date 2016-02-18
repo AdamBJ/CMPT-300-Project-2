@@ -66,11 +66,11 @@ void executeCommand(_Bool in_background, char *tokens[]) {
 			if (waitpid(pID, NULL, 0) == -1)
 				perror("Error waiting for child to exit");
 		} else {
-			//give time for child to finish executing before starting loop
+			//give time for child to finish executing before returning to loop
+			//to ensure new prompt is printed after results of previous command
 			usleep(10000);
 		}
 
-		// Cleanup any previously exited background child processes
 		cleanupZombies();
 	}
 }
@@ -104,10 +104,10 @@ void executeBuiltInCommand(char *tokens[]) {
 			executeNumberedHistoryCommand(commandNo);
 		}
 	} else if (strcmp(tokens[0], "\0") == 0) {
-		//carriage return
+		//carriage return, empty command
 		return;
 	} else {
-		//exit
+		//exit command
 		exit(0);
 	}
 }
@@ -122,7 +122,7 @@ void executePWDCommand() {
 	}
 }
 
-/*Returns 1 if successful, 0 otherwise*/
+/*Returns 1 if processing successful, 0 otherwise*/
 
 int tokenizeAndProcessCommand(char* buff, char* tokens[], _Bool* in_background) {
 	// Add command in buff to history if not !n, !!, or carriage return (newline)
@@ -135,6 +135,7 @@ int tokenizeAndProcessCommand(char* buff, char* tokens[], _Bool* in_background) 
 		//error
 		return 0;
 	}
+
 	// Extract & if running in background:
 	if (token_count > 0 && strcmp(tokens[token_count - 1], "&") == 0) {
 		*in_background = true;
@@ -148,7 +149,7 @@ int tokenizeAndProcessCommand(char* buff, char* tokens[], _Bool* in_background) 
 /* Fill token array. Upon return token array points
  * into buff, which has been transformed into a series
  * of null-terminated tokens rather than a single
- * null-terminated string */
+ * null-terminated string. */
 
 int tokenize_command(char *buff, char *tokens[]){
 	int tokenCount = 0;
@@ -165,7 +166,7 @@ int tokenize_command(char *buff, char *tokens[]){
 		buff++;
 	}
 
-	/*Final token and null terminate*/
+	/*Create final token and null terminate*/
 	tokens[tokenCount++] = tokenStart;
 	tokens[tokenCount + 1] = '\0';
 
@@ -174,7 +175,7 @@ int tokenize_command(char *buff, char *tokens[]){
 
 void zeroArray(char* tokens[]) {
 	for (int i = 0; i < NUM_TOKENS; i++) {
-		if (tokens[i] == NULL)
+		if (tokens[i] == '\0')
 			break;
 		tokens[i] = '\0';
 	}
